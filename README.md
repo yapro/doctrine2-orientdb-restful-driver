@@ -28,7 +28,7 @@ on this string:
 
     driver_class:   OrientDB\Driver
 
-2) Change you settings for connect ro database in file:
+2) Change you settings for connect to database in file:
 
     /app/config/parameters.yml
 
