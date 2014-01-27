@@ -1,10 +1,10 @@
 {
-    "name":        "yapro/doctrin2-orientdb-restful-driver",
-    "description": "Doctrin2 PHP RESTful driver for OrientDB graph database.",
+    "name":        "yapro/doctrine2-orientdb-restful-driver",
+    "description": "Doctrine2 PHP RESTful driver for OrientDB graph database.",
     "version":     "0.0.7",
     "type":        "symfony-bundle",
     "keywords":    ["doctrine2", "orientdb", "restful", "driver"],
-    "homepage":    "http://github.com/yapro/doctrin2-orientdb-restful-driver",
+    "homepage":    "http://github.com/yapro/doctrine2-orientdb-restful-driver",
     "license":     "MIT",
 
     "authors": [
