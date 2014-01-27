@@ -52,12 +52,12 @@ parameters:
 ```
       "require": {
           ...
-          "yapro/doctrin2-orientdb-restful-driver": "dev-master"
+          "yapro/doctrine2-orientdb-restful-driver": "dev-master"
       },
 ```
 and run command:
 
-    $ composer update yapro/doctrin2-orientdb-restful-driver --prefer-source
+    $ composer update yapro/doctrine2-orientdb-restful-driver --prefer-source
 
 All ready.
 
@@ -80,7 +80,7 @@ UnitTest
 
 You can check you fix with next command:
 
-    $ bin/phpunit -c app vendor/yapro/doctrin2-orientdb-restful-driver/Tests/Crud.php
+    $ bin/phpunit -c app vendor/yapro/doctrine2-orientdb-restful-driver/Tests/Crud.php
 
 Help
 ----------------------------------
