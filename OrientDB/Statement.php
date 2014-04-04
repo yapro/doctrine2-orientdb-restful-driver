@@ -313,35 +313,35 @@ class Statement implements \IteratorAggregate, StatementInterface
      */
     private function getSQLWithParams($sql = '')
     {
-        if( !$this->_values ){
-            return $sql;
-        }
-
         $command = substr($sql,0,6);
 
-        if( $command != 'INSERT' && $command != 'UPDATE' && $command != 'DELETE' ){
+        if( $command === 'SELECT' ){
 
             // т.к. OrientDB пока не поддерживает алиас таблицы, то придется избавиться от алиасов в запросе
             // details: https://groups.google.com/forum/#!topic/orient-database/NE803NtA0Tw
             $tableName = $tableAlias = array();
             $e = explode(' ', $sql);
-            $sql = '';
+            $sqlNew = '';// сформируем запрос заново
             while($a = each($e)){
-                $sql .= $a[1].' ';
+                $sqlNew .= $a[1].' ';
                 if( $a[1] === 'FROM' ){
                     $tableName = each($e);
                     $tableAlias = each($e);
-                    $sql .= $tableName[1].' ';
+                    $sqlNew .= $tableName[1].' ';
                 }
             }
             //$sql = str_replace($tableAlias[1].'.', $tableName[1].'.', $sql);
-            $sql = str_replace($tableAlias[1].'.', '', $sql);
+            $sql = str_replace($tableAlias[1].'.', '', $sqlNew);
 
             // т.к. OrientDB не умеет работать с OFFSET, реализовываю следующие моменты:
             // details: https://groups.google.com/forum/#!topic/orient-database/Ule0OOKoZDU
             $sql = str_replace('LIMIT 0', '', $sql);// удаляем
             $sql = str_replace('OFFSET 0', '', $sql);// удаляем
             $sql = str_replace(' OFFSET ', ',', $sql);// заменяем
+        }
+
+        if( empty($this->_values) ){// если запро без параметров, например выбор всех строк: SELECT name FROM Users
+            return $sql;
         }
 
         $e = explode('?', $sql);

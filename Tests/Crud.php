@@ -153,6 +153,33 @@ class Crud extends WebTestCase
      * @depends testInsert
      * @param array $a
      */
+    function testSelect(array $a)
+    {
+        /** @var $entityManager \Doctrine\ORM\EntityManager */
+        $entityManager = $a['entityManager'];
+
+        // проверяем существование данных используя поиск без параметров
+        // специально не будет пользоваться $entityManager, чтобы сделать реальный запрос в базу данных
+        $arr = $this->_em->getRepository('AcmeDemoBundle:UnitTestEntity')->findAll();
+
+        $this->assertTrue( is_array($arr), 'problems with select rows from database' );
+
+        $this->assertTrue( !empty($arr[0]), 'problems with select result' );
+
+        /** @var $entity \Acme\DemoBundle\Entity\UnitTestEntity */
+        $entity = $arr[0];
+
+        $this->assertTrue( is_object($entity), 'problems with select result data' );
+
+        $email = $entity->getEmail();
+
+        $this->assertTrue( !empty($email), 'select result is empty' );
+    }
+
+    /**
+     * @depends testInsert
+     * @param array $a
+     */
     function testUpdate(array $a)
     {
         /** @var $entityManager \Doctrine\ORM\EntityManager */
@@ -166,7 +193,7 @@ class Crud extends WebTestCase
         $entityManager->persist($entity);
         $entityManager->flush();
 
-        // проверяем обновление (специально через QueryBuilder)
+        // проверяем обновление (специально через QueryBuilder и используя $this->_em вместо $entityManager )
         $qb = $this->_em->createQueryBuilder();
         $qb->select('t')
             ->from('AcmeDemoBundle:UnitTestEntity', 't')
