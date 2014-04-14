@@ -3,8 +3,6 @@ Doctrine2 RESTful-driver for OrientDB
 
 To work with database, you must perform actions described below.
 
-Need a 2nd version OrientDB, it can be compiled, details - https://github.com/orientechnologies/orientdb/wiki/Tutorial:-Installation#compile-your-own-the-community-edition
-
 Start the database (complete path):
 
     $ /var/www/orientDB/bin/server.sh
