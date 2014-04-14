@@ -190,9 +190,9 @@ class Connection implements ConnectionInterface
         curl_setopt($this->_conn, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($this->_conn, CURLOPT_NOBODY, false);
         // посылаем запрос и получаем ответ
-        $json = curl_exec($this->_conn);
+        $result = curl_exec($this->_conn);
 
-        if( !$json ){
+        if( !$result ){
             throw new Exception();
         }
 
@@ -200,20 +200,20 @@ class Connection implements ConnectionInterface
 
         // проверяем успешность ответа
         if( $info['http_code'] !== 200 ){
-            throw new Exception( $json."\n".print_r($info,1) );
+            throw new Exception( $result."\n".print_r($info,1) );
         }
 
         if( $action === 'batch' && $additional ){
-            return $json;
+            return $result;
         }
 
-        $json_decode = json_decode($json, true);
+        $json = json_decode($result, true);
 
-        if ( !$json_decode ) {
-            throw new Exception($json);
+        if ( !$json ) {
+            throw new Exception($result);
         }
 
-        return $json_decode;
+        return $json;
     }
 
     /**

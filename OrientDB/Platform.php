@@ -659,7 +659,17 @@ class Platform extends \Doctrine\DBAL\Platforms\AbstractPlatform
      */
     protected function initializeDoctrineTypeMappings()
     {
-        $this->doctrineTypeMapping = array(
+        $this->doctrineTypeMapping = $this->getOrientDbDoctrineMapping();
+        return true;
+    }
+
+    /**
+     * содержит массив маппинга возможных полей базы данных
+     * @return array|string
+     */
+    public function getOrientDbDoctrineMapping()
+    {
+        return array(
             'boolean'       => 'boolean',
             'integer'       => 'integer',// 32-bit signed Integers (-2,147,483,648 - +2,147,483,647)
             'short'       => 'smallint',// Small 16-bit signed integers (-32,768 - +32,767)
@@ -671,16 +681,15 @@ class Platform extends \Doctrine\DBAL\Platforms\AbstractPlatform
             'string'       => 'string',// Any string as alphanumeric sequence of chars ( 0-infinity )
             'binary'       => 'blob',
             'embedded'       => 'text',
-            'embeddedlist'       => 'text',
-            'embeddedset'       => 'text',
-            'embeddedmap'       => 'text',
+            'embeddedlist'       => 'string',
+            'embeddedset'       => 'string',
+            'embeddedmap'       => 'string',
             'link'       => 'string',
             'linklist'       => 'string',
-            'linkset'       => 'text',
-            'linkmap'       => 'text',
+            'linkset'       => 'string',
+            'linkmap'       => 'string',
             'byte'       => 'smallint'// Single byte. Useful to store small 8-bit signed integers (-128 - +127)
         );
-        return true;
     }
 
     /**

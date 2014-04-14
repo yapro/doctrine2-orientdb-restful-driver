@@ -137,6 +137,7 @@ class SchemaManager extends \Doctrine\DBAL\Schema\AbstractSchemaManager
             case 'mediumblob':
             case 'longblob':
             case 'blob':
+            case 'embeddedmap':
             case 'year':
                 $length = null;
                 break;

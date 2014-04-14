@@ -24,7 +24,7 @@ use Doctrine\DBAL\Driver as DriverInterface;
 class Driver implements DriverInterface
 {
     /**
-     * 2) осуществляет подключение к базе данных
+     * 3) осуществляет подключение к базе данных
      */
     public function connect(array $params, $username = null, $password = null, array $driverOptions = array())
     {
@@ -42,7 +42,7 @@ class Driver implements DriverInterface
 
     /**
      * {@inheritdoc}
-     * возращает класс работы с полями таблицы (членами класса, возможно с Анотациями к полям)
+     * 2) возращает класс работы с полями таблицы (членами класса, возможно с Анотациями к полям)
      */
     public function getSchemaManager(\Doctrine\DBAL\Connection $conn)
     {
@@ -55,13 +55,26 @@ class Driver implements DriverInterface
      */
     public function getDatabasePlatform()
     {
-        return new Platform();
+        $platform = new Platform();
+
+        // некоторый маппинг уже подготовлен самой Doctrine vendor/doctrine/dbal/lib/Doctrine/DBAL/Types/Type.php
+        // но маппинга подготовленого Doctrine не хватает и мы мапим поля OrientDb к полям Doctrine
+        $map = $platform->getOrientDbDoctrineMapping();
+        \Doctrine\DBAL\Types\Type::addType('embeddedmap', 'OrientDB\Types\EmbeddedMap');
+        foreach($map as $orientDbFieldType => $doctrineFieldType){
+            if(\Doctrine\DBAL\Types\Type::hasType($orientDbFieldType)){
+                continue;
+            }
+            $class = \Doctrine\DBAL\Types\Type::getType($doctrineFieldType);
+            \Doctrine\DBAL\Types\Type::addType($orientDbFieldType, $class);
+        }
+        return new $platform;
     }
 
     /**
      * {@inheritdoc}
      * Get the name of the database connected to for this driver.
-     * Возращает имя базы данных, к которой осущствлено подключение с помощью этого драйвера
+     * Возращает параметры подключения к базе данных, с помощью которого осущствлено подключение этого драйвера
      */
     public function getDatabase(\Doctrine\DBAL\Connection $conn)
     {

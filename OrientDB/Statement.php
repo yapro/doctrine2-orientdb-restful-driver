@@ -122,7 +122,8 @@ class Statement implements \IteratorAggregate, StatementInterface
 
         $this->paramCount = count( explode('?', $this->query) ) - 1;
 
-        // собираем пустой массив значений, с пометкой, что все значения являются строковыми
+        // собираем пустой массив значений, с пометкой, что все данные являются строковыми
+        // чуть ниже (в \OrientDB\Statement::bindParams) мы определим тим данных
         if ( $this->paramCount ) {
             // Index 0 is types
             // Need to init the string else php think we are trying to access it as a array.
@@ -201,7 +202,8 @@ class Statement implements \IteratorAggregate, StatementInterface
     }
 
     /**
-     * связываем все ключи и параметры
+     * связываем все ключи и параметры (определяя типы данных)
+     * вызывается в \OrientDB\Statement::execute
      */
     function bindParams(array $params)
     {
@@ -209,23 +211,31 @@ class Statement implements \IteratorAggregate, StatementInterface
 
             $variable = $params[$i];
 
-            $typeInfo = gettype($variable);
+            // @todo ужасно не безопасно (переделать, когда узнаю как определять тип поля по классу сущности)
+            if( json_decode($variable) ){
 
-            // сопостовляем тип данных
-            switch($typeInfo){
-                case "boolean":
-                    $type = PDO::PARAM_BOOL;
-                    break;
-                case "integer":
-                    $type = PDO::PARAM_INT;
-                    break;
-                case "string":
-                case "double":
-                    $type = ( mb_strlen($variable) > 128 )? PDO::PARAM_LOB : PDO::PARAM_STR;
-                    break;
-                default:
-                    $type = PDO::PARAM_NULL;
-                    $variable = null;
+                $type = PDO::PARAM_INT;// это нужно, чтобы не квотировать данные
+
+            }else{
+
+                $typeInfo = gettype($variable);
+
+                // сопостовляем тип данных
+                switch($typeInfo){
+                    case "boolean":
+                        $type = PDO::PARAM_BOOL;
+                        break;
+                    case "integer":
+                        $type = PDO::PARAM_INT;
+                        break;
+                    case "string":
+                    case "double":
+                        $type = ( mb_strlen($variable) > 128 )? PDO::PARAM_LOB : PDO::PARAM_STR;
+                        break;
+                    default:
+                        $type = PDO::PARAM_NULL;
+                        $variable = null;
+                }
             }
 
             if( !$this->bindParam($i, $variable, $type) ){
@@ -528,7 +538,7 @@ class Statement implements \IteratorAggregate, StatementInterface
             $values = array();
             foreach ($ret[1] as $k => $v) {
                 // Mysqli converts them to a scalar type it can fit in.
-                $values[] = null === $v ? null : (string)$v;
+                $values[] = null === $v ? null : ( is_array($v)? $v : (string)$v );
             }
             return $values;
         }
