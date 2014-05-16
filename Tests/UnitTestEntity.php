@@ -14,8 +14,8 @@ class UnitTestEntity
     /**
      * переменная нужна т.к. в OrientDB у каждой строки должен быть rid - уникальный ИД
      * @ORM\Id
-     * @ORM\Column(type="string", name="@rid")
-     * @ORM\GeneratedValue(strategy="AUTO")
+     * @ORM\Column(type="bigint", name="@rid")
+     * @ORM\GeneratedValue(strategy="IDENTITY")
      */
     private $rid = 0;
 
@@ -28,6 +28,11 @@ class UnitTestEntity
      * @ORM\Column(type="integer", options={"default":0})
      */
     private $time_created = 0;
+
+    /**
+     * @ORM\Column(type="embeddedmap")
+     */
+    private $array = array();
 
     /**
      * @param mixed $time_created
@@ -75,5 +80,21 @@ class UnitTestEntity
     public function getEmail()
     {
         return (string)$this->email;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getArray()
+    {
+        return $this->array;
+    }
+
+    /**
+     * @param mixed $array
+     */
+    public function setArray($array)
+    {
+        $this->array = $array;
     }
 }

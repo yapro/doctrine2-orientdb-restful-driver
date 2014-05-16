@@ -166,21 +166,27 @@ class Connection implements ConnectionInterface
      * @return mixed
      * @throws Exception
      */
-    public function getData($action = '', $additional = '')
+    public function getData($action = '', $additional = '', $queryType = '')
     {
         if( empty($action) ){
             throw new Exception();
         }
 
         if( $action === 'batch' && $additional ){
-            $arr = array(
-                'type' => 'cmd',
-                'language' => 'sql',
-                'command' => $additional
-            );
-            $content = '{"transaction":false,"operations":['.json_encode($arr).']}';
-            curl_setopt($this->_conn, CURLOPT_POSTFIELDS, $content);
+
+            // чтобы получить RID последней добавленной строки, напишем такой хак:
+            /*if($queryType === 'INSERT'){
+                $command = '["LET $c = '.$additional.'", "RETURN $c"]';
+            }else{*/
+                $command = '"'.$additional.'"';
+            //}
+
             $additional = '';
+
+            $content = '{"transaction":false,"operations":[{"type":"cmd","language":"sql","command":'.$command.'}]}';
+
+            curl_setopt($this->_conn, CURLOPT_POSTFIELDS, $content);
+
         }
 
         curl_setopt($this->_conn, CURLOPT_POST, ( ( $action === 'batch' )? 1 : 0));
@@ -217,12 +223,17 @@ class Connection implements ConnectionInterface
     }
 
     /**
+     * согласно доктрине, обязан возвращать целочисленное значение
+     * поэтому, логичнее всего возвращать именно значение строки (не указывая ID класса)
      * {@inheritdoc}
      */
     public function lastInsertId($name = null)
     {
-        //return $this->_conn->insert_id;
         return $this->lastInsertId;
+        if(!is_numeric($this->lastInsertId)){
+            $e = explode(':',$this->lastInsertId);// разбиваем #12:345
+            return $e['1'];// возврщаем 345
+        }
     }
 
     /**

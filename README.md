@@ -62,8 +62,15 @@ All ready.
 How use it
 ----------------------------------
 
-1) Create you entities classes (php files)
-
+1) Create you entities classes (php files) with PHPDoc annotations for field rid, example:
+```
+/**
+ * @ORM\Id
+ * @ORM\Column(type="bigint", name="@rid")
+ * @ORM\GeneratedValue(strategy="IDENTITY")
+ */
+private $rid = 0;
+```
 2) Run console command for create/update you entities:
 
     $ php app/console doctrine:schema:update --force
@@ -76,9 +83,9 @@ delete class(table) in OrientDB with command:
 UnitTest
 ----------------------------------
 
-You can check you fix with next command:
+You can check you fix (or features) with next command:
 
-    $ bin/phpunit -c app vendor/yapro/doctrine2-orientdb-restful-driver/Tests/Crud.php
+    $ bin/phpunit -c app vendor/yapro/doctrine2-orientdb-restful-driver/Tests/Crud.php --env=dev
 
 Help
 ----------------------------------

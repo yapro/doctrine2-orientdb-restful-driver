@@ -123,7 +123,7 @@ class Statement implements \IteratorAggregate, StatementInterface
         $this->paramCount = count( explode('?', $this->query) ) - 1;
 
         // собираем пустой массив значений, с пометкой, что все данные являются строковыми
-        // чуть ниже (в \OrientDB\Statement::bindParams) мы определим тим данных
+        // чуть ниже (в \OrientDB\Statement::bindValue) определяется тип данных
         if ( $this->paramCount ) {
             // Index 0 is types
             // Need to init the string else php think we are trying to access it as a array.
@@ -137,7 +137,8 @@ class Statement implements \IteratorAggregate, StatementInterface
     }
 
     /**
-     * Привязка переменных к параметрам подготавливаемого запроса
+     * Обязательный метод, который должен быть объявлен
+     * Привязывает переменные к параметрам подготавливаемого запроса
      * @link http://www.php.net/manual/ru/mysqli-stmt.bind-param.php
      * i	соответствующая переменная имеет тип integer
      * d	соответствующая переменная имеет тип double
@@ -186,6 +187,8 @@ class Statement implements \IteratorAggregate, StatementInterface
      */
     public function bindParam($column, &$variable, $type = null, $length = null)
     {
+        $z=1;// можно обойтись и без реализации этого метода
+        /*
         if (null === $type) {
             $type = 's';
         } else {
@@ -199,55 +202,12 @@ class Statement implements \IteratorAggregate, StatementInterface
         $this->_bindedValues[$column] =& $variable;
         $this->_bindedValues[0][$column - 1] = $type;
         return true;
+        */
     }
 
     /**
-     * связываем все ключи и параметры (определяя типы данных)
-     * вызывается в \OrientDB\Statement::execute
-     */
-    function bindParams(array $params)
-    {
-        for ($i = 1; $i < $this->paramCount; $i++) {
-
-            $variable = $params[$i];
-
-            // @todo ужасно не безопасно (переделать, когда узнаю как определять тип поля по классу сущности)
-            if( json_decode($variable) ){
-
-                $type = PDO::PARAM_INT;// это нужно, чтобы не квотировать данные
-
-            }else{
-
-                $typeInfo = gettype($variable);
-
-                // сопостовляем тип данных
-                switch($typeInfo){
-                    case "boolean":
-                        $type = PDO::PARAM_BOOL;
-                        break;
-                    case "integer":
-                        $type = PDO::PARAM_INT;
-                        break;
-                    case "string":
-                    case "double":
-                        $type = ( mb_strlen($variable) > 128 )? PDO::PARAM_LOB : PDO::PARAM_STR;
-                        break;
-                    default:
-                        $type = PDO::PARAM_NULL;
-                        $variable = null;
-                }
-            }
-
-            if( !$this->bindParam($i, $variable, $type) ){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * 2) связывает параметры и значения (биндим)
-     * вызывается в \Doctrine\DBAL\Connection::_bindTypedValues
+     * 2) определяем типы данных + связываем параметры и значения (биндим)
+     * вызывается в \Doctrine\DBAL\Connection::_bindTypedValues и в \OrientDB\Statement::bindValuesAndParams
      * @param mixed $param - номер параметра (в списке параметров)
      * @param mixed $value - значение параметра
      * @param null $type - тип данных в значении (один из $_paramTypeMap)
@@ -266,8 +226,35 @@ class Statement implements \IteratorAggregate, StatementInterface
             }
         }
 
-        $this->_values[$param] = $value;
-        $this->_bindedValues[$param] =& $this->_values[$param];
+        // когда тип данных: массив, значит тип поля: embeddedmap
+        if( is_array($value) ){
+
+            $type = PDO::PARAM_INT;// это нужно, чтобы не квотировать данные
+            $value = json_encode($value);
+
+        }else{
+
+            $typeInfo = gettype($value);
+
+            // сопостовляем тип данных
+            switch($typeInfo){
+                case "boolean":
+                    $type = PDO::PARAM_BOOL;
+                    break;
+                case "integer":
+                    $type = PDO::PARAM_INT;
+                    break;
+                case "string":
+                case "double":
+                    $type = ( mb_strlen($value) > 128 )? PDO::PARAM_LOB : PDO::PARAM_STR;
+                    break;
+                default:
+                    $type = PDO::PARAM_NULL;
+                    $variable = null;
+            }
+        }
+
+        $this->_bindedValues[$param] =& $value;
         $this->_bindedValues[0][$param - 1] = $type;
         return true;
     }
@@ -350,22 +337,29 @@ class Statement implements \IteratorAggregate, StatementInterface
             $sql = str_replace(' OFFSET ', ',', $sql);// заменяем
         }
 
-        if( empty($this->_values) ){// если запро без параметров, например выбор всех строк: SELECT name FROM Users
+        if( empty($this->_bindedValues) ){// если запро без параметров, например выбор всех строк: SELECT name FROM Users
             return $sql;
         }
 
         $e = explode('?', $sql);
         $sql = '';
         foreach($e as $k => $str){
+
             $sql .= $str;
+
             $key = $k + 1;
-            if( isset($this->_values[ $key ]) ){// если параметр существует
-                if( $this->_bindedValues[0][$k] === 'i' ){// если значение числовое
-                    $sql .= $this->_values[ $key ];
-                }else{
-                    $sql .= "'".str_replace("'", "''", str_replace('\\', '\\\\', $this->_values[ $key ]) )."'";
-                }
+
+            // если тип данных неизвестен и параметр не существует
+            if( !isset($this->_bindedValues[0][$k]) || !isset($this->_bindedValues[ $key ]) ) {
+                continue;
             }
+
+            if( $this->_bindedValues[0][$k] == 1 ){// если тип данных: число
+                $sql .= $this->_bindedValues[ $key ];
+            }else{
+                $sql .= "'".str_replace("'", "''", str_replace('\\', '\\\\', $this->_bindedValues[ $key ]) )."'";
+            }
+
         }
         return trim($sql);
     }
@@ -409,10 +403,8 @@ class Statement implements \IteratorAggregate, StatementInterface
                 if ( ! $this->bindValuesAndParams($params)) {
                     throw new Exception();
                 }
-            } else {// если значения параметров забиндены предварительно
-                if ( !$this->bindParams($this->_bindedValues) ){
-                    throw new Exception();
-                }
+            } else {
+                // значения параметров забиндены предварительно
             }
         }
 
@@ -473,18 +465,19 @@ class Statement implements \IteratorAggregate, StatementInterface
             $query = $e[0];
             if( isset($e[1]) && !empty($e[1]) && in_array($query, array('create','alter','drop','INSERT','UPDATE','DELETE') ) ){
 
-                $data = $this->connection->getData('batch', $sql);
+                $data = $this->connection->getData('batch', $sql, $query);
 
                 if( in_array($query, array('INSERT','UPDATE','DELETE') ) ){
 
-                    if( is_array($data) ){
-                        throw new Exception('is_array($data)');
+                    if( !is_array($data) ){
+                        throw new Exception('$data type not array');
                     }
 
-                    $this->num_rows = $data;// кол-во затронутых строк
+                    $this->num_rows = count($data['result']);// кол-во затронутых строк
 
-                    // @todo переделать setLastInsertId когда будет фикс на https://github.com/orientechnologies/orientdb/issues/1944
-                    $this->connection->setLastInsertId($data);
+                    if($query === 'INSERT'){
+                        $this->connection->setLastInsertId($data['result']['0']['@rid']);
+                    }
                 }
 
             }else{// запрос получения данных
@@ -508,21 +501,21 @@ class Statement implements \IteratorAggregate, StatementInterface
 
     /**
      * Bind a array of values to bound parameters
-     * Связывает массив значений обоих параметров
+     * Связывает массив значений и их параметров
      *
      * @param array $values
      * @return boolean
      */
     private function bindValuesAndParams($values)
     {
-        $params = array();
-        $types = str_repeat('s', count($values));
-        $params[0] = $types;
-
+        $i = 0;
         foreach ($values as &$v) {
-            $params[] =& $v;
+            $i++;
+            if( !$this->bindValue($i, $v) ){
+                return false;
+            }
         }
-        return $this->bindParams($params);
+        return true;
     }
 
     /**

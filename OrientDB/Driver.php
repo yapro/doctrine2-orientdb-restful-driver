@@ -59,8 +59,10 @@ class Driver implements DriverInterface
 
         // некоторый маппинг уже подготовлен самой Doctrine vendor/doctrine/dbal/lib/Doctrine/DBAL/Types/Type.php
         // но маппинга подготовленого Doctrine не хватает и мы мапим поля OrientDb к полям Doctrine
+        if(\Doctrine\DBAL\Types\Type::hasType('embeddedmap') === false) {
+            \Doctrine\DBAL\Types\Type::addType('embeddedmap', 'OrientDB\Types\EmbeddedMap');
+        }
         $map = $platform->getOrientDbDoctrineMapping();
-        \Doctrine\DBAL\Types\Type::addType('embeddedmap', 'OrientDB\Types\EmbeddedMap');
         foreach($map as $orientDbFieldType => $doctrineFieldType){
             if(\Doctrine\DBAL\Types\Type::hasType($orientDbFieldType)){
                 continue;

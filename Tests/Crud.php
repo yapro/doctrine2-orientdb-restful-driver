@@ -88,12 +88,12 @@ class Crud extends WebTestCase
      */
     function testTableCreate()
     {
-        // php app/console generate:doctrine:entity --no-interaction --entity=AcmeBlogBundle:Post --fields="title:string(100) body:text" --format=xml
+        // php app/console generate:doctrine:entity --no-interaction --entity=AcmeBlogBundle:UnitTestEntity --fields="title:string(100) body:text" --format=xml
         // http://symfony.com/doc/current/bundles/SensioGeneratorBundle/commands/generate_doctrine_entity.html
         // создаем таблицу
         $last_line = exec('php '.$this->root.'/app/console doctrine:schema:update --force');
 
-        $this->assertEquals('Database schema updated successfully! "3" queries were executed', $last_line, 'problems in database or driver');
+        $this->assertEquals('Database schema updated successfully! "4" queries were executed', $last_line, 'problems in database or driver');
     }
 
     /**
@@ -133,11 +133,10 @@ class Crud extends WebTestCase
         $entity = new \Acme\DemoBundle\Entity\UnitTestEntity();
         $entity->setEmail($this->email);
         $entity->setTimeCreated(1);
+        $entity->setArray(array(1=>2));
 
         $entityManager->persist($entity);
         $entityManager->flush();
-
-        $this->assertTrue( ($entity->getRid()? true : false), 'something wrong with insert');
 
         // проверяем добавление
         $id = 0;
@@ -173,7 +172,11 @@ class Crud extends WebTestCase
 
         $email = $entity->getEmail();
 
-        $this->assertTrue( !empty($email), 'select result is empty' );
+        $this->assertTrue( !empty($email), 'select result is empty Email' );
+
+        $array = $entity->getArray();
+
+        $this->assertTrue( !empty($array), 'select result is empty Array' );
     }
 
     /**
@@ -190,6 +193,7 @@ class Crud extends WebTestCase
 
         // обновляем строку в таблице
         $entity->setTimeCreated(2);
+        $entity->setArray(array(2=>3));
         $entityManager->persist($entity);
         $entityManager->flush();
 
@@ -201,15 +205,24 @@ class Crud extends WebTestCase
             ->setParameter('email', $this->email);
         $arr = $qb->getQuery()->getResult();
 
-        $time_created = 1;
+        $array = array(); $time_created = 1;
 
         if( $arr && isset($arr[0]) && is_object($arr[0]) ){
             /** @var $entity \Acme\DemoBundle\Entity\UnitTestEntity */
             $entity = $arr[0];
+            $array = $entity->getArray();
             $time_created = $entity->getTimeCreated();
         }
 
         $this->assertEquals(2, $time_created, 'problems with update row in database' );
+
+        $this->assertTrue( !empty($array), 'problems with update row in database with Array (empty)' );
+
+        if(isset($array['2'])){
+            $this->assertEquals(3, $array['2'], 'problems with update row in database with Array (wrong changed)' );
+        }else{
+            $this->assertTrue( false, 'problems with update row in database with Array (not updated)' );
+        }
     }
 
     /**
@@ -251,6 +264,6 @@ class Crud extends WebTestCase
         // удаляем таблицу
         $last_line = exec('php '.$this->root.'/app/console doctrine:query:sql "drop class UnitTestEntity"');
 
-        $this->assertEquals('int 1', $last_line, 'something wrong in database or driver');
+        $this->assertEquals('3bca5f39270be06c7bcb142b3a2b1b3b', md5($last_line), 'something wrong in database or driver');
     }
 }
