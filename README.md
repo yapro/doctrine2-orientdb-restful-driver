@@ -1,9 +1,18 @@
 Doctrine2 RESTful-driver for OrientDB
 ========================
 
+System requirements
+----------------------------------
+
+Install orientDB v.1.7 from branch develop. Last cheked this version on:
+
+    commit 4f3aba5faa6a404367aea41e3fbab3dbe7c06da4
+    Author: enisher <enisher@gmail.com>
+    Date:   Thu May 15 23:33:51 2014 +0300
+
 To work with database, you must perform actions described below.
 
-Start the database (complete path):
+Start the database  (complete path):
 
     $ /var/www/orientDB/bin/server.sh
 
